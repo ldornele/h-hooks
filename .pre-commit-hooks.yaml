@@ -13,10 +13,10 @@
 - id: commitlint
   name: HyperFleet Commitlint Validation
   description: Validates commit messages against HyperFleet Conventional Commits standard
-  entry: hooks/commitlint.sh
-  language: script
+  entry: bash hooks/commitlint.sh
+  language: system
   stages: [commit-msg]
   always_run: true
-  pass_filenames: false
+  pass_filenames: true
   require_serial: true
   verbose: true
