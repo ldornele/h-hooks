@@ -1,0 +1,22 @@
+# Pre-commit hooks definition for HyperFleet repositories
+# This file is used by the pre-commit framework to define reusable hooks
+#
+# Repositories can reference these hooks in their .pre-commit-config.yaml:
+#   repos:
+#     - repo: https://github.com/openshift-hyperfleet/h-hooks
+#       rev: v1.0.0
+#       hooks:
+#         - id: commitlint
+#
+# See: https://pre-commit.com/#creating-new-hooks
+
+- id: commitlint
+  name: HyperFleet Commitlint Validation
+  description: Validates commit messages against HyperFleet Conventional Commits standard
+  entry: hooks/commitlint.sh
+  language: script
+  stages: [commit-msg]
+  always_run: true
+  pass_filenames: false
+  require_serial: true
+  verbose: true

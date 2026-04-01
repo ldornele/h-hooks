@@ -1,0 +1,50 @@
+{
+  "name": "@hyperfleet/h-hooks",
+  "version": "1.0.0",
+  "description": "Centralized validation logic for HyperFleet repositories - commitlint config, pre-commit hooks, and Prow job definitions",
+  "main": "commitlint/commitlint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openshift-hyperfleet/h-hooks.git"
+  },
+  "keywords": [
+    "commitlint",
+    "conventional-commits",
+    "hyperfleet",
+    "pre-commit",
+    "prow",
+    "git-hooks",
+    "validation"
+  ],
+  "author": "HyperFleet Platform Team",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/openshift-hyperfleet/h-hooks/issues"
+  },
+  "homepage": "https://github.com/openshift-hyperfleet/h-hooks#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0"
+  },
+  "peerDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0"
+  },
+  "scripts": {
+    "test": "bash -c 'cd commitlint && ./validate-commits.sh HEAD~1 HEAD'",
+    "test:config": "commitlint --config commitlint/commitlint.config.js --from HEAD~1 --to HEAD",
+    "lint": "echo 'Running shellcheck on scripts...' && find . -name '*.sh' -exec shellcheck {} +"
+  },
+  "files": [
+    "commitlint/",
+    "pre-commit/",
+    "prow/",
+    "docs/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

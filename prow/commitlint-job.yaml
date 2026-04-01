@@ -1,0 +1,146 @@
+# Prow Presubmit Job Template for Commitlint Validation
+#
+# This template should be copied to each HyperFleet repository as .prow.yaml
+# and customized by updating the repository name.
+#
+# Usage:
+#   1. Copy this file to your repository: cp prow/commitlint-job.yaml .prow.yaml
+#   2. Update the repository name: openshift-hyperfleet/<YOUR-REPO-NAME>
+#   3. Commit and push
+#
+# The Prow job will:
+#   - Run on all pull requests
+#   - Validate all commit messages in the PR
+#   - Block merge if validation fails
+#   - Use the centralized commitlint config from h-hooks repository
+#
+# Reference: https://docs.prow.k8s.io/docs/jobs/
+
+presubmits:
+  # REPLACE THIS with your repository name
+  # Example: openshift-hyperfleet/hyperfleet-sentinel
+  openshift-hyperfleet/<REPOSITORY-NAME>:
+    - name: commitlint
+      cluster: default
+      always_run: true
+      skip_report: false
+      decorate: true
+      decoration_config:
+        timeout: 5m
+        grace_period: 15s
+        utility_images:
+          clonerefs: "gcr.io/k8s-prow/clonerefs:latest"
+          initupload: "gcr.io/k8s-prow/initupload:latest"
+          entrypoint: "gcr.io/k8s-prow/entrypoint:latest"
+          sidecar: "gcr.io/k8s-prow/sidecar:latest"
+      spec:
+        containers:
+          - name: commitlint
+            image: node:18-alpine
+            command:
+              - /bin/sh
+            args:
+              - -c
+              - |
+                set -euo pipefail
+
+                echo "========================================="
+                echo "HyperFleet Commitlint Validation"
+                echo "========================================="
+                echo ""
+                echo "Repository: ${REPO_OWNER}/${REPO_NAME}"
+                echo "PR: #${PULL_NUMBER}"
+                echo "Base SHA: ${PULL_BASE_SHA}"
+                echo "Head SHA: ${PULL_PULL_SHA}"
+                echo ""
+
+                # Install git (required for commitlint)
+                apk add --no-cache git
+
+                # Download centralized commitlint config from h-hooks repository
+                echo "Downloading centralized commitlint config..."
+                HOOKS_REPO_URL="https://raw.githubusercontent.com/openshift-hyperfleet/h-hooks/main"
+                wget -O commitlint.config.js "${HOOKS_REPO_URL}/commitlint/commitlint.config.js"
+
+                if [[ ! -f commitlint.config.js ]]; then
+                    echo "Error: Failed to download commitlint config"
+                    exit 1
+                fi
+
+                echo "✓ Downloaded commitlint config"
+                echo ""
+
+                # Install commitlint dependencies
+                echo "Installing commitlint dependencies..."
+                npm install --silent --no-save \
+                    @commitlint/cli@^19.6.0 \
+                    @commitlint/config-conventional@^19.6.0
+
+                echo "✓ Dependencies installed"
+                echo ""
+
+                # Validate commit messages
+                echo "Validating commit messages..."
+                echo "Range: ${PULL_BASE_SHA}..${PULL_PULL_SHA}"
+                echo ""
+
+                if npx commitlint \
+                    --config ./commitlint.config.js \
+                    --from "${PULL_BASE_SHA}" \
+                    --to "${PULL_PULL_SHA}" \
+                    --verbose; then
+                    echo ""
+                    echo "========================================="
+                    echo "✓ All commit messages are valid"
+                    echo "========================================="
+                    exit 0
+                else
+                    echo ""
+                    echo "========================================="
+                    echo "✗ Commit message validation failed"
+                    echo "========================================="
+                    echo ""
+                    echo "Please fix commit messages to follow HyperFleet Conventional Commits standard."
+                    echo ""
+                    echo "Required format:"
+                    echo "  HYPERFLEET-XXX - <type>: <subject>"
+                    echo ""
+                    echo "Valid types:"
+                    echo "  feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+                    echo ""
+                    echo "Examples:"
+                    echo "  ✓ HYPERFLEET-813 - feat: add commitlint validation"
+                    echo "  ✓ HYPERFLEET-425 - docs: update commit standard"
+                    echo "  ✓ fix: resolve memory leak"
+                    echo ""
+                    echo "  ✗ feat: Add validation (subject should be lowercase)"
+                    echo "  ✗ HYPERFLEET-123 add validation (missing type)"
+                    echo ""
+                    echo "Documentation:"
+                    echo "  https://github.com/openshift-hyperfleet/architecture/blob/main/hyperfleet/standards/commit-standard.md"
+                    echo ""
+                    exit 1
+                fi
+            env:
+              # Prow automatically provides these environment variables
+              - name: REPO_OWNER
+                value: ""
+              - name: REPO_NAME
+                value: ""
+              - name: PULL_NUMBER
+                value: ""
+              - name: PULL_BASE_SHA
+                value: ""
+              - name: PULL_PULL_SHA
+                value: ""
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+      annotations:
+        description: "Validates commit messages against HyperFleet Conventional Commits standard"
+        testgrid-dashboards: "hyperfleet"
+        testgrid-tab-name: "commitlint"
